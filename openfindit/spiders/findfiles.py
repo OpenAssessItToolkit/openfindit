@@ -7,13 +7,6 @@ from scrapy.utils.httpobj import urlparse
 class FindFilesSpider(scrapy.Spider):
     name = 'findfiles'
 
-    customs_settings = {
-      'FEED_URI' : 'catcity_.csv'
-     }
-    # allowed_domains = ['www.epa.gov']
-    # start_urls = ['https://www.epa.gov']
-
-    # http://doc.scrapy.org/en/latest/topics/spiders.html#spider-arguments
     def __init__(self, *args, **kwargs):
         """ Enable urls argument to for start_urls and parse for allowed_domains """
         urls = kwargs.pop('urls', [])
