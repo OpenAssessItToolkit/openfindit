@@ -1,0 +1,3 @@
+requests==2.20.0
+scrapy==1.6.0
+scrapy-random-useragent==0.2
