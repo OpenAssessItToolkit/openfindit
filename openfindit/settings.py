@@ -17,7 +17,11 @@ NEWSPIDER_MODULE = 'openfindit.spiders'
 #Export as CSV Feed
 FEED_FORMAT = "csv"
 
-# DEPTH_LIMIT = 1
+#Prioritize pages closest to start_urls
+# http://doc.scrapy.org/en/latest/faq.html#does-scrapy-crawl-in-breadth-first-or-depth-first-order
+DEPTH_PRIORITY = 1
+SCHEDULER_DISK_QUEUE = 'scrapy.squeues.PickleFifoDiskQueue'
+SCHEDULER_MEMORY_QUEUE = 'scrapy.squeues.FifoMemoryQueue'
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'scraper (+http://www.yourdomain.com)'
