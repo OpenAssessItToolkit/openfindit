@@ -33,7 +33,7 @@ class FindFilesSpider(scrapy.Spider):
 
             if urlparse(url).scheme in ('http', 'https'):
 
-                if url.endswith(('.pdf', '.docx', '.pptx', 'xlsx')):
+                if url.endswith(('.pdf', '.docx', '.pptx', '.xlsx')):
                     yield {
                         'url' : url,
                         'link_text' : a_tag.xpath('.//text()').get(),
