@@ -12,7 +12,7 @@ if [ -f "docs/assets/alice_today.csv" ]; then
 fi
 
 echo "(bash) - ACTION: Crawling site to automatically create a current report for today."
-scrapy crawl findfiles -a urls='https://openassessittoolkit.github.io/openfindit/pdf-test-page.html' -s DEPTH_LIMIT=1 -o 'docs/assets/alice_today.csv'
+scrapy crawl findfiles -a urls='http://joelcrawfordsmith.com/openassessit/demo/test-pdf-links.html' -s DEPTH_LIMIT=1 -o 'docs/assets/alice_today.csv'
 echo "(bash) - ACTION: Creating unique hashes for files found in todays new alice_today.csv report."
 python3 ../opendiffit/opendiffit/add_hash.py \
 --input-file='docs/assets/alice_today.csv' \
