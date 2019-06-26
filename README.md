@@ -39,12 +39,14 @@ scrapy crawl findfiles -a urls=https://somewebsite.com -s DEPTH_LIMIT=1 -o wiki-
 ### To search multiple domains:
 
 ```bash
-scrapy crawl findfiles -a filename=list-of-websites.txt  -s DEPTH_LIMIT=1 -o list-of-websites.csv
+scrapy crawl findfiles -a filename=list-of-websites.txt  -s DEPTH_LIMIT=1 -t csv -o - > 'docs/assets/alice_today.csv'
 ```
 
 
-`-a` is for passing in OpenFindIt arguments for which website(s) to scan
+`-a` is for passing in OpenFindIt arguments for which website(s) to scan.
 
-`-s` is for passing in any native built-in [Scapy settings](https://docs.scrapy.org/en/latest/topics/settings.html), like [DEPTH_LIMIT](https://docs.scrapy.org/en/latest/topics/settings.html#depth-limit).
+`-s` is for passing some native built-in [Scapy settings](https://docs.scrapy.org/en/latest/topics/settings.html), like [DEPTH_LIMIT](https://docs.scrapy.org/en/latest/topics/settings.html#depth-limit).
 
-`-o` is for the name of your output file.
+`-t` is for file type.
+
+`-o - >` is for the name of your output file and directs it to overwrite the current file, rather than append.
