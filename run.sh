@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# if [ $# -ne 4 ]; then
-#     echo 'Requires: url, output filename, webdriver'
-#     exit 1
-# fi
-# mkdir -p $(pwd)/tmp/$3;
-# $1 $2 \
-
-# pip install -r ../opendiffit/requirements.txt
-# mkdir -p ~/Desktop/spy;
-# rm -f /Users/joel/Desktop/spy/wikispy.csv
-
-SITE=https://openassessittoolkit.github.io/openfindit/pdf-test-page.html
-CURRENT=docs/assets/alice_today.csv
-PREV=docs/assets/alice_prev.csv
-
 if [ -f "docs/assets/alice_prev.csv" ]; then
     echo "(bash) - FYI: You have an old report we don't need anymore. Continuing..."
     echo "(bash) - ACTION: Removing old alice_prev.csv report."
