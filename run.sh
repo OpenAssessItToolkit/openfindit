@@ -15,35 +15,6 @@ SITE=https://openassessittoolkit.github.io/openfindit/pdf-test-page.html
 CURRENT=docs/assets/alice_today.csv
 PREV=docs/assets/alice_prev.csv
 
-# if [ -f "docs/assets/alice_prev.csv" ]; then
-#     echo "(bash) - FYI: alice_prev.csv csv report exists. Continuing..."
-# else
-#     echo "(bash) - FYI: alice_prev.csv does not exist."
-
-#     if [ -f "docs/assets/alice_today.csv" ]; then
-#         echo "(bash) ACTION: Renaming 'alice_today.csv to alice_prev.csv."
-#         mv 'docs/assets/alice_today.csv' 'docs/assets/alice_prev.csv';
-#     else
-#         echo "(bash) - FYI: No csv reports exists to compare. You should run a new one."
-#     fi
-# fi
-
-# if [ -f "docs/assets/alice_today.csv" ]; then
-#     echo "(bash) - FYI: alice_today.csv csv report exists. Continuing..."
-#     python3 ../opendiffit/opendiffit/add_hash.py \
-#     --input-file='docs/assets/alice_today.csv' \
-#     --output-file='-';
-# else
-    # echo "(bash) - FYI: alice_today.csv csv report does not exist."
-
-# does this go here, or should we clean up after ourselves when its done?
-# if [ -f "docs/assets/alice_prev.csv" ]; then
-#     echo "(bash) - ACTION: Removing old alice_prev.csv report."
-#     rm 'docs/assets/alice_prev.csv'
-#     echo "(bash) - ACTION: Replacing the old alice_prev.csv report with the most recent alice_today.csv report"
-#     mv 'docs/assets/alice_today.csv' 'docs/assets/alice_prev.csv';
-# fi
-
 if [ -f "docs/assets/alice_prev.csv" ]; then
     echo "(bash) - FYI: You have an old report we don't need anymore. Continuing..."
     echo "(bash) - ACTION: Removing old alice_prev.csv report."
