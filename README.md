@@ -15,13 +15,13 @@ Make sure you have permission to scan the website!
 
 OpenFindIt can be used with [OpenDiffIt](https://github.com/OpenAssessItToolkit/opendiffit) to monitor documents like PDF files that are uploaded to your website. The following is an idea on how they can be used together.
 
-https://www.youtube.com/embed/OSf31NBB2aE
+https://youtu.be/OSf31NBB2aE
 
 ## OpenFindIt demo:
 
 This is an overview of OpenFindIt functionality.
 
-https://www.youtube.com/embed/d4LtNM2CSFg
+https://youtu.be/d4LtNM2CSFg
 
 # Using OpenFindIt:
 
