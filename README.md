@@ -11,6 +11,20 @@ You can use it as-is or use it as a template to create your own.
 
 Make sure you have permission to scan the website!
 
+## Overview:
+
+OpenFindIt can be used with [OpenDiffIt](https://github.com/OpenAssessItToolkit/opendiffit) to monitor documents like PDF files that are uploaded to your website. The following is an idea on how they can be used together.
+
+https://www.youtube.com/embed/OSf31NBB2aE
+
+## OpenFindIt demo:
+
+This is an overview of OpenFindIt functionality.
+
+https://www.youtube.com/embed/d4LtNM2CSFg
+
+# Using OpenFindIt:
+
 __Prerequisites:__
 
 1. [Start up a virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
@@ -21,8 +35,6 @@ __Prerequisites:__
 pip install -r requirements.txt
 ```
 
-## Using OpenFindIt:
-
 Change directories into the OpenFindIt folder
 
 ```bash
@@ -30,13 +42,13 @@ cd openfindit
 ```
 
 
-### To search one domain:
+## To search one domain:
 
 ```bash
 scrapy crawl findfiles -a urls=https://somewebsite.com -s DEPTH_LIMIT=1 -o wiki-single-sites2.csv
 ```
 
-### To search multiple domains:
+## To search multiple domains:
 
 ```bash
 scrapy crawl findfiles -a filename=list-of-websites.txt  -s DEPTH_LIMIT=1 -t csv -o - > 'docs/assets/alice_today.csv'
