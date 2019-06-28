@@ -21,7 +21,7 @@ https://youtu.be/OSf31NBB2aE
 
 This is an overview of OpenFindIt functionality.
 
-https://youtu.be/d4LtNM2CSFg
+https://youtu.be/6V9DNIOMyKc
 
 # Using OpenFindIt:
 
