@@ -45,7 +45,7 @@ cd openfindit
 ## To search one domain:
 
 ```bash
-scrapy crawl findfiles -a urls=https://somewebsite.com -s DEPTH_LIMIT=1 -o wiki-single-sites2.csv
+scrapy crawl findfiles -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-pdf-links.html -s DEPTH_LIMIT=1 -o wiki-single-sites2.csv
 ```
 
 ## To search multiple domains:
