@@ -1,6 +1,8 @@
 # OpenFindIt (Work in Progress)
 
-This is a little [Scrapy](https://github.com/scrapy/scrapy) script to find documents on a website and send them to a CSV.
+The FindFiles Spider is a little [Scrapy](https://github.com/scrapy/scrapy) script to find documents on a website and send them to a CSV. Use case could be monitoring when new PDF files are uploaded to your website to check for accessibility compliance.
+
+The FindVideos Spider searches for YouTube embeds and sends them to a CSV also. Use case could be monitoring when new YouTube videos are embedded on your website so you can manually check if accurate captions exist.
 
 Scrapy is infinitely configurable. This specific crawler implementation features:
 
@@ -62,3 +64,4 @@ scrapy crawl findfiles -a filename=list-of-websites.txt  -s DEPTH_LIMIT=1 -t csv
 `-t` is for file type.
 
 `-o - >` is for the name of your output file and directs it to overwrite the current file, rather than append.
+
