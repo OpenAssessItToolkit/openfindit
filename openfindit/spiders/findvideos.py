@@ -27,23 +27,47 @@ class FindVideosSpider(scrapy.Spider):
 
 
     def parse(self, response):
+        """ Parse all <a>. yield PDF to csv, if not, crawl it  """
+        for a_tag in response.xpath('//a[@href]'):
+
+            url = response.urljoin(a_tag.attrib['href'])
+
+            if urlparse(url).scheme in ('http', 'https'):
+                request = scrapy.Request(
+                    url, 
+                    callback = self.parse_iframe,
+                    meta=response.meta, 
+                )
+                print('1')
+                print(response)
+                yield request
+
+            elif 'http' in urlparse(url).scheme:
+                print('2')
+                yield scrapy.Request(url, self.parse)
+                
+
+
+    def parse_iframe(self, response):
         """ Parse all <iframe>. If video yield it to csv """
+        print('parse_iframe')
         for iframe_tag in response.xpath('//iframe[@src]'):
             src = response.urljoin(iframe_tag.attrib['src'])
             
             if src.startswith(('https://youtube', 'https://www.youtube', 'https://youtu.be', 'https://vimeo', 'https://www.vimeo')):
-
+                print('iframe is a video.')
                 request = scrapy.Request(
                     src, 
-                    callback = self.parse_iframe, 
+                    callback = self.parse_iframe_contents, 
                     meta=response.meta, 
                     dont_filter=True,)
                 yield request
 
             else:
-                # not a video, skip it
+                print('iframe Not a video.')
 
-    def parse_iframe(self, response):
+    def parse_iframe_contents(self, response):
+        print('parse_iframe_contents')
         video_title = response.xpath('//title//text()').extract_first()
         video_title = re.sub(r'\W+', ' ',  video_title),
 
