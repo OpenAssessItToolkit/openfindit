@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import subprocess
+import os
+import sys
 import scrapy
 import re
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
+
 
 class FindVideosSpider(scrapy.Spider):
     name = 'findvideos'
@@ -27,34 +31,31 @@ class FindVideosSpider(scrapy.Spider):
 
 
     def parse(self, response):
-        """ Parse all <a>. yield PDF to csv, if not, crawl it  """
+        """ Parse all <a>. yield to csv, if not, crawl it  """
         for a_tag in response.xpath('//a[@href]'):
 
             url = response.urljoin(a_tag.attrib['href'])
 
-            if urlparse(url).scheme in ('http', 'https'):
+            if '.pdf' not in url and urlparse(url).scheme in ('http', 'https'):
                 request = scrapy.Request(
                     url, 
                     callback = self.parse_iframe,
                     meta=response.meta, 
                 )
-                print('1')
                 print(response)
                 yield request
 
             elif 'http' in urlparse(url).scheme:
-                print('2')
+
                 yield scrapy.Request(url, self.parse)
                 
 
-
     def parse_iframe(self, response):
         """ Parse all <iframe>. If video yield it to csv """
-        print('parse_iframe')
         for iframe_tag in response.xpath('//iframe[@src]'):
             src = response.urljoin(iframe_tag.attrib['src'])
-            
-            if src.startswith(('https://youtube', 'https://www.youtube', 'https://youtu.be', 'https://vimeo', 'https://www.vimeo')):
+            print('Found iframe...')
+            if src.startswith(('https://youtube', 'https://www.youtube', 'https://youtu.be', 'https://www.youtube-nocookie.com', 'https://player.vimeo', 'https://players.brightcove')):
                 print('iframe is a video.')
                 request = scrapy.Request(
                     src, 
@@ -64,16 +65,29 @@ class FindVideosSpider(scrapy.Spider):
                 yield request
 
             else:
-                print('iframe Not a video.')
+                print('iframe not a video.')
 
     def parse_iframe_contents(self, response):
-        print('parse_iframe_contents')
         video_title = response.xpath('//title//text()').extract_first()
-        video_title = re.sub(r'\W+', ' ',  video_title),
+        video_title_clean = re.sub(r'\W+', ' ',  video_title)
+        video_url_clean = response.url.split('?')[0]
+        video_cc = "UNKNOWN"
+
+        process = subprocess.Popen(['youtube-dl', '--list-subs',  video_url_clean], stdout=subprocess.PIPE)
+        caption_status = str(process.communicate()[0])
+        print(caption_status)
+
+        if "has no subtitles" in caption_status:
+            video_cc = "NO"
+        elif "Available subtitles for" in caption_status:
+            video_cc = "YES"
+        else:
+            video_cc = "UNKNOWN"
 
         yield dict(
-            video_url=response.url,
-            video_title = video_title,
-            from_page_url = response.request.headers.get('Referer')
+            video_url = video_url_clean,
+            video_title = video_title_clean,
+            from_page_url = response.request.headers.get('Referer'),
+            video_cc = video_cc
         )
     
