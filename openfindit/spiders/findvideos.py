@@ -2,11 +2,13 @@
 import subprocess
 import os
 import sys
+from urllib.parse import urlparse, parse_qs
 import scrapy
 import re
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
+import pdb
 
 
 class FindVideosSpider(scrapy.Spider):
@@ -31,18 +33,17 @@ class FindVideosSpider(scrapy.Spider):
 
 
     def parse(self, response):
-        """ Parse all <a>. yield to csv, if not, crawl it  """
+        """ Parse all <a>. yield PDF to csv, if not, crawl it  """
         for a_tag in response.xpath('//a[@href]'):
 
             url = response.urljoin(a_tag.attrib['href'])
 
-            if '.pdf' not in url and urlparse(url).scheme in ('http', 'https'):
+            if urlparse(url).scheme in ('http', 'https'):
                 request = scrapy.Request(
                     url, 
                     callback = self.parse_iframe,
                     meta=response.meta, 
                 )
-                print(response)
                 yield request
 
             elif 'http' in urlparse(url).scheme:
@@ -52,14 +53,55 @@ class FindVideosSpider(scrapy.Spider):
 
     def parse_iframe(self, response):
         """ Parse all <iframe>. If video yield it to csv """
+        videoUrls = [
+            'https://youtube.com/watch', 
+            'https://www.youtube.com/watch',
+            'https://youtube.com/v', 
+            'https://www.youtube.com/v', 
+            'https://youtu.be/', 
+            'https://youtube.com/embed', 
+            'https://www.youtube.com/embed', 
+            'https://www.youtube-nocookie.com/watch', 
+            'https://youtube-nocookie.com/watch', 
+            'https://www.youtube-nocookie.com/v', 
+            'https://youtube-nocookie.com/v', 
+            'https://player.vimeo', 
+            'https://players.brightcove']
+
+        # Eww, nested function. Fix this.
+        def get_id(url):
+            u_pars = urlparse(url)
+            quer_v = parse_qs(u_pars.query).get('v')
+            if quer_v:
+                return quer_v[0]
+            pth = u_pars.path.split('/')
+            if pth:
+                return pth[-1]
+
+        for a_tag in response.xpath('//a[@href]'):
+            href = response.urljoin(a_tag.attrib['href'])
+
+            if href.startswith(tuple(videoUrls)):
+                print('Found link to video %s.' % href)
+                # Format YouTube URLs to grab embed url so we can parse it like an iframe
+                if 'youtu' in href:
+                    href = "https://youtube.com/embed/" + get_id(href)
+                
+                request = scrapy.Request(
+                    href, 
+                    callback = self.parse_video_contents, 
+                    meta=response.meta, 
+                    dont_filter=True,)
+                yield request
+
         for iframe_tag in response.xpath('//iframe[@src]'):
             src = response.urljoin(iframe_tag.attrib['src'])
-            print('Found iframe...')
-            if src.startswith(('https://youtube', 'https://www.youtube', 'https://youtu.be', 'https://www.youtube-nocookie.com', 'https://player.vimeo', 'https://players.brightcove')):
-                print('iframe is a video.')
+            print('Found iframe... %s' % src)
+            if src.startswith(tuple(videoUrls)):
+                print('iframe is a video %s' % src)
                 request = scrapy.Request(
                     src, 
-                    callback = self.parse_iframe_contents, 
+                    callback = self.parse_video_contents, 
                     meta=response.meta, 
                     dont_filter=True,)
                 yield request
@@ -67,13 +109,12 @@ class FindVideosSpider(scrapy.Spider):
             else:
                 print('iframe not a video.')
 
-    def parse_iframe_contents(self, response):
+    def parse_video_contents(self, response):
         video_title = response.xpath('//title//text()').extract_first()
         video_title_clean = re.sub(r'\W+', ' ',  video_title)
         video_url_clean = response.url.split('?')[0]
         video_cc = "UNKNOWN"
-
-        process = subprocess.Popen(['youtube-dl', '--list-subs',  video_url_clean], stdout=subprocess.PIPE)
+        process = subprocess.Popen(['youtube-dl', '--list-subs', video_url_clean], stdout=subprocess.PIPE)
         caption_status = str(process.communicate()[0])
         print(caption_status)
 
@@ -88,6 +129,6 @@ class FindVideosSpider(scrapy.Spider):
             video_url = video_url_clean,
             video_title = video_title_clean,
             from_page_url = response.request.headers.get('Referer'),
-            video_cc = video_cc
+            captioned = video_cc
         )
     
