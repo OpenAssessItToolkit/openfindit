@@ -105,7 +105,7 @@ class FindVideosSpider(scrapy.Spider):
             if href.startswith(tuple(videoUrls)):
                 print('INFO: Found link to video %s.' % href)
                 # Format YouTube URLs to grab embed url so we can parse it like an iframe
-                if 'youtu' in href:
+                if 'youtu' in href and 'embed' not in href:
                     href = "https://youtube.com/embed/" + get_id(href)
 
                 request = scrapy.Request(
@@ -138,12 +138,14 @@ class FindVideosSpider(scrapy.Spider):
 
         video_title = response.xpath('//title//text()').extract_first()
         video_title_clean = re.sub(r'\W+', ' ',  video_title)
-        video_url_clean = response.url.split('?')[0]
-
+        video_url = response.url
+        if 'https://www.youtube.com/embed/videoseries' not in video_url:
+            video_url = video_url.split('?')[0]
+            
         # TODO: Clean this up to only ping once
         try:
-            subs = subprocess.Popen(['youtube-dl', '--list-subs', video_url_clean], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
-            duration = subprocess.Popen(['youtube-dl', '--get-duration', video_url_clean], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
+            subs = subprocess.Popen(['youtube-dl', '--list-subs', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+            duration = subprocess.Popen(['youtube-dl', '--get-duration', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
 
         except Exception as ex:
             print(ex)
@@ -171,7 +173,7 @@ class FindVideosSpider(scrapy.Spider):
             video_cc = "UNKNOWN"
 
         yield dict(
-            video_url = video_url_clean,
+            video_url = video_url,
             video_title = video_title_clean,
             from_page_url = response.request.headers.get('Referer'),
             captioned = video_cc,
