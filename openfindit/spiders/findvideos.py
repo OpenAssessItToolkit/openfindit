@@ -40,6 +40,7 @@ class FindVideosSpider(scrapy.Spider):
         try:
             for a_tag in response.xpath('//a[@href]'):
                 url = response.urljoin(a_tag.attrib['href'])
+                if ('youtube.com/user' not in url) and ('youtube.com/channel' not in url) and ('vimeo.com/channel' not in url): # Skip non-video 'Follow Us' type links
                 if urlparse(url).scheme in ('http', 'https'):
                     request = scrapy.Request(
                         url,
