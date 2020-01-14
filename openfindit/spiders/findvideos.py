@@ -118,8 +118,9 @@ class FindVideosSpider(scrapy.Spider):
             
         # TODO: Clean this up to only ping once
         try:
-            subs = subprocess.Popen(['youtube-dl', '--list-subs', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
-            duration = subprocess.Popen(['youtube-dl', '--get-duration', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
+            print('subprocess placeholder')
+            # subs = subprocess.Popen(['youtube-dl', '--list-subs', '--cache-dir=~/tmp', '--sleep-interval 121', '--max-sleep-interval 131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+            # duration = subprocess.Popen(['youtube-dl', '--get-duration', '--cache-dir=~/tmp', '--sleep-interval 122', '--max-sleep-interval 133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
         except Exception as ex:
             print(ex)
 
