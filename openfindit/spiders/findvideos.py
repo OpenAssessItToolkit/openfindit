@@ -78,7 +78,7 @@ class FindVideosSpider(scrapy.Spider):
                 request = scrapy.Request(
                     src,
                     callback = self.parse_video_contents,
-                    meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Requires captions.'},
+                    meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Captions required.'},
                     dont_filter=True,)
                     
                 yield request
@@ -92,13 +92,13 @@ class FindVideosSpider(scrapy.Spider):
             if href.startswith(tuple(VIDEO_URLS)):
                 print('INFO: Found link to video %s.' % href)
                 # Format YouTube URLs to grab embed url so we can parse it like an iframe
-                if 'youtu' in href and 'embed' not in href:
-                    href = "https://youtube.com/embed/" + get_id(href)
+                if ('youtu' in href) and ('embed' not in href):
+                    href = "https://www.youtube.com/embed/" + get_id(href)
                 request = scrapy.Request(
                     href,
                     callback = self.parse_video_contents,
-                    meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': 'UNKNOWN', 'video_note': 'If link is popup video mark the on_page column as YES. Then it must be captioned.'},
-                    dont_filter=True,)
+                    meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': 'UNKNOWN', 'video_note': 'Captions encouraged on off-site links. Captions required if on-site pop-up.'},
+                    dont_filter=False,)
 
                 yield request
 
@@ -109,11 +109,13 @@ class FindVideosSpider(scrapy.Spider):
         video_title = "UNKNOWN"
         video_cc = "UNKNOWN"
         video_duration = "UNKNOWN"
+        duration = "UNKNOWN"
+        subs = "UNKNOWN"
 
         video_title = response.xpath('//title//text()').extract_first()
         video_title_clean = re.sub(r'\W+', ' ',  video_title)
         video_url = response.url
-        if ('/videoseries' and '/playlist') not in video_url:
+        if ('/videoseries' and '/playlist' and 'watch_videos') not in video_url: # Don't crawl playlists
             video_url = video_url.split('?')[0]
             
         # TODO: Clean this up to only ping once
