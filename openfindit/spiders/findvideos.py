@@ -36,7 +36,7 @@ class FindVideosSpider(scrapy.Spider):
     VIDEO_URLS = open(os.getcwd() + '/openfindit/config/findvideos.txt').read().splitlines()
 
     def parse(self, response):
-        """ Parse all <a>. if iframe has video parse contents, if not crawl it  """
+        """ Parse all <a>. Crawl if same domain  """
         try:
             for a_tag in response.xpath('//a[@href]'):
                 url = response.urljoin(a_tag.attrib['href'])
@@ -55,10 +55,11 @@ class FindVideosSpider(scrapy.Spider):
 
 
     def parse_iframe(self, response):
-        """ Parse all <iframe>. If link, crawl it, if video, pass it on for inspection """
+        """ Parse content for potentially embedded videos and forward for inspection. """
  
         # TODO: Eww, nested function. Fix this.
         def get_id(url):
+            """ parse YouTube urls for id """
             u_pars = urlparse(url)
             quer_v = parse_qs(u_pars.query).get('v')
             if quer_v:
