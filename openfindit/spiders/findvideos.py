@@ -8,6 +8,8 @@ import re
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from utils import get_id
 
 
 class FindVideosSpider(scrapy.Spider):
@@ -37,71 +39,65 @@ class FindVideosSpider(scrapy.Spider):
 
     def parse(self, response):
         """ Parse all <a>. Crawl if same domain  """
-        try:
-            for a_tag in response.xpath('//a[@href]'):
-                url = response.urljoin(a_tag.attrib['href'])
-                if ('youtube.com/user' not in url) and ('youtube.com/channel' not in url) and ('vimeo.com/channel' not in url): # Skip non-video 'Follow Us' type links
-                if urlparse(url).scheme in ('http', 'https'):
-                    request = scrapy.Request(
-                        url,
-                        callback = self.parse_iframe,
-                        meta={'metadata': response.meta}
-                    )
-                    yield request
-                elif 'http' in urlparse(url).scheme:
-                    yield scrapy.Request(url, self.parse)
+        print('MY INFO: parse called')
 
-        except Exception as ex:
-            print(ex)
+        for a_tag in response.xpath('//a[@href]'):
+            url = response.urljoin(a_tag.attrib['href'])
+            if (urlparse(url).scheme in ('http', 'https')):
+
+                yield scrapy.Request(
+                    url,
+                    callback = self.parse_page_for_video,
+                    dont_filter = True,
+                    meta={'metadata': response.meta}
+                )
+            else:
+                print('MY INFO: (else) link Not http or https, skip')
 
 
-    def parse_iframe(self, response):
+    def parse_page_for_video(self, response):
         """ Parse content for potentially embedded videos and forward for inspection. """
- 
-        # TODO: Eww, nested function. Fix this.
-        def get_id(url):
-            """ parse YouTube urls for id """
-            u_pars = urlparse(url)
-            quer_v = parse_qs(u_pars.query).get('v')
-            if quer_v:
-                return quer_v[0]
-            pth = u_pars.path.split('/')
-            if pth:
-                return pth[-1]                   
-
+        print('MY INFO: called parse_page_for_videos')
 
         # Search for embedded videos
         for iframe_tag in response.xpath('//iframe[@src]'):
             src = response.urljoin(iframe_tag.attrib['src'])
-            print('INFO: Found iframe... %s' % src)
+            print('MY INFO: Found iframe... %s' % src)
             if src.startswith(tuple(VIDEO_URLS)):
-                print('INFO: iframe has a video %s' % src)
-                request = scrapy.Request(
+                print('MY INFO: (if) iframe has a video %s' % src)
+                    
+                yield scrapy.Request(
                     src,
                     callback = self.parse_video_contents,
                     meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Captions required.'},
                     dont_filter=True,)
-                    
-                yield request
             else:
-                print('INFO: iframe not a video.')
+                print('MY INFO: (else) iframe not a video.')
 
         # Search for links to videos
         for a_tag in response.xpath('//a[@href]'):
             href = response.urljoin(a_tag.attrib['href'])
 
             if href.startswith(tuple(VIDEO_URLS)):
-                print('INFO: Found link to video %s.' % href)
+                print('MY INFO: (if) Found link to video %s.' % href)
                 # Format YouTube URLs to grab embed url so we can parse it like an iframe
                 if ('youtu' in href) and ('embed' not in href):
                     href = "https://www.youtube.com/embed/" + get_id(href)
-                request = scrapy.Request(
+
+                yield scrapy.Request(
                     href,
                     callback = self.parse_video_contents,
                     meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': 'UNKNOWN', 'video_note': 'Captions encouraged on off-site links. Captions required if on-site pop-up.'},
                     dont_filter=False,)
-
-                yield request
+            
+            else:
+                print('MY INFO: (else) found normal link, send back to self.parse')
+                if href.endswith('.pdf'):
+                    print('MY INFO: Fuck pdfs. ') # LINKEXTRACTOR is bypassed for some reason.
+                else:
+                    yield scrapy.Request(
+                        href, 
+                        self.parse)
 
         #TODO: Add capability to detect HTML5 <video> tag and parse for <track>.
 
@@ -121,7 +117,7 @@ class FindVideosSpider(scrapy.Spider):
             
         # TODO: Clean this up to only ping once
         try:
-            print('subprocess placeholder')
+            print('MY INFO: subprocess placeholder')
             # subs = subprocess.Popen(['youtube-dl', '--list-subs', '--cache-dir=~/tmp', '--sleep-interval 121', '--max-sleep-interval 131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
             # duration = subprocess.Popen(['youtube-dl', '--get-duration', '--cache-dir=~/tmp', '--sleep-interval 122', '--max-sleep-interval 133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
         except Exception as ex:
@@ -143,9 +139,9 @@ class FindVideosSpider(scrapy.Spider):
             video_url = video_url,
             video_title = video_title_clean,
             from_page_url = response.request.headers.get('Referer'),
-            captioned = video_cc,
-            duration = video_duration,
+            # captioned = video_cc,
+            # duration = video_duration,
             location = response.meta['video_found_as'],
             on_page = response.meta['on_page'],
-            notes = response.meta['video_note']
+            # notes = response.meta['video_note']
         )
