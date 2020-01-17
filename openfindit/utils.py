@@ -12,13 +12,13 @@ def get_id(url):
         return pth[-1]
 
 
-def got_captions(subs):
+def cc_status(cc):
     """ parse for captions """
-    if "Available subtitles for" in subs:
+    if "Available subtitles for" in cc:
         yield "YES"
-    elif "has no subtitles" in subs:
+    elif "has no subtitles" in cc:
         yield "NO"
-    elif "video doesn't have subtitles" in subs:
+    elif "video doesn't have subtitles" in cc:
         yield "NO"
     else:
         yield "UNKNOWN"  
