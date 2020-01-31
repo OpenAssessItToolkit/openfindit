@@ -10,7 +10,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
 from ..utils import get_id
 
-class FindFilesSpider(scrapy.Spider):
+class FindVideosSpider(scrapy.Spider):
     name = 'findvideos'
 
     def __init__(self, *args, **kwargs):
@@ -28,7 +28,7 @@ class FindFilesSpider(scrapy.Spider):
                 self.allowed_domains = [urlparse(url).netloc for url in f.readlines()]
 
         self.logger.info(self.start_urls)
-        super(FindFilesSpider, self).__init__(*args, **kwargs)
+        super(FindVideosSpider, self).__init__(*args, **kwargs)
 
 
     # Constants
@@ -42,27 +42,39 @@ class FindFilesSpider(scrapy.Spider):
 
     def parse(self, response):
         """ Parse all <a>. yield PDF to csv, if not, crawl it  """
+
         for iframe_tag in response.xpath('//iframe[@src]'):
-            src = response.urljoin(iframe_tag.attrib['src'])
+            # print(iframe_tag.select('@src').extract())
+            src = response.urljoin(iframe_tag.attrib['src']).replace("http://", "https://")
             if src.startswith(tuple(VIDEO_URLS)):
                 yield scrapy.Request(
                     src,
-                    callback = self.parse_video_contents,
-                    meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Captions probably required.'},
+                    callback = self._parse_video_contents,
+                    meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Captions required.'},
                     dont_filter=True,)
+        
 
         for a_tag in response.xpath('//a[@href]'):
-            href = response.urljoin(a_tag.attrib['href'])
-                
+            # print(a_tag.select('@href').extract())
+            href = response.urljoin(a_tag.attrib['href']).replace("http://", "https://")
+            href_clean = href.split('?')[0]
             if href.startswith(tuple(VIDEO_URLS)):
                 if ('youtu' in href) and ('embed' not in href):
                     href = "https://www.youtube.com/embed/" + get_id(href)
+
+                if 'shadowbox' or 'colorbox' or 'data-fancybox' or 'data-lightbox' in a_tag:
+                    on_page = 'YES'
+                    video_note = 'Captions required.'
+                else:
+                    on_page = 'UNKNOWN'
+                    video_note = 'Captions encouraged on off-site links. Required if overlay.'
+
                 yield scrapy.Request(
                     href,
                     callback = self._parse_video_contents,
-                    meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': 'UNKNOWN', 'video_note': 'Captions encouraged on off-site links. Required if overlay.'},
+                    meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
                     dont_filter=True,)
-            elif href.endswith(tuple(DOCUMENT_EXT)):
+            elif href_clean.endswith(tuple(DOCUMENT_EXT)):
                 print('Skip links to documents')
             else:
                 yield scrapy.Request(href, self.parse)
@@ -70,23 +82,24 @@ class FindFilesSpider(scrapy.Spider):
                     
     def _parse_video_contents(self, response):
         """ Inspect video for data """
-        video_title = str(response.xpath('//title//text()').extract_first()) or "UNKNOWN"
+        video_title = str(response.xpath('//title//text()').extract_first()) or  "UNKNOWN"
         video_title_clean = re.sub(r'\W+', ' ',  video_title)
         video_cc = "UNKNOWN"
         video_duration = "UNKNOWN"
         video_url = response.url
-        if ('/videoseries' and '/playlist' and 'watch_videos') not in video_url: # If not playlist take off the query string
+        from_page_url = response.request.headers.get('Referer') or response.status
+        if ('/videoseries' and '/playlist' and 'watch_videos' and 'list') not in video_url: # If not playlist take off the query string
             video_url = video_url.split('?')[0]
         try:
-            print('MY INFO: subprocess placeholder')
+            print('MY INFO: subprocess')
             # TODO: Clean this up to only ping once
             cc = ""
             duration = ""
-            cc = subprocess.Popen(['youtube-dl', '--list-subs', '--cache-dir=~/tmp', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+            cc = subprocess.Popen(['youtube-dl', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
             if '429' in cc:
                 print("WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
                 raise CloseSpider("Returned 429 - Too many requests. You're about to get this IP banned. Closing spider.")
-            duration = subprocess.Popen(['youtube-dl', '--get-duration', '--cache-dir=~/tmp', '--sleep-interval=122', '--max-sleep-interval=133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
+            duration = subprocess.Popen(['youtube-dl', '--get-duration', '--sleep-interval=122', '--max-sleep-interval=133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
             if "Available subtitles for" in cc:
                 video_cc = "YES"
             elif ("has no subtitles" in cc) or ("video doesn't have subtitles" in cc):
@@ -100,7 +113,7 @@ class FindFilesSpider(scrapy.Spider):
         yield dict(
             video_url = video_url,
             video_title = video_title_clean,
-            from_page_url = response.request.headers.get('Referer'),
+            from_page_url = from_page_url,
             captioned = video_cc,
             duration = video_duration,
             location = response.meta['video_found_as'],

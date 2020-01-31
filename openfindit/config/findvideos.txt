@@ -40,3 +40,5 @@ http://warpwire.duke.edu/w
 //player.vimeo
 //players.brightcove
 //warpwire.duke.edu/w
+https://www.youtube.com/gaming
+https://youtube.com/gaming

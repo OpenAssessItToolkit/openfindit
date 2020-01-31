@@ -9,7 +9,7 @@
 #     https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'scraper'
+BOT_NAME = 'Duke Accessibility Scraper for PDF and Video links'
 
 SPIDER_MODULES = ['openfindit.spiders']
 NEWSPIDER_MODULE = 'openfindit.spiders'
@@ -63,7 +63,8 @@ CONCURRENT_REQUESTS_PER_IP = 1
 # https://github.com/cnu/scrapy-random-useragent
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
-    'random_useragent.RandomUserAgentMiddleware': 400
+    'random_useragent.RandomUserAgentMiddleware': 400,
+    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600
 }
 USER_AGENTS = [
     ('Mozilla/5.0 (X11; Linux x86_64) '
@@ -118,3 +119,8 @@ HTTPCACHE_EXPIRATION_SECS = 43200
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_HTTP_CODES = []
 HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# Trying to get 301 to work
+# https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#module-scrapy.downloadermiddlewares.redirect
+REDIRECT_ENABLED = True
+REDIRECT_MAX_TIMES = 5
