@@ -60,12 +60,13 @@ class FindVideosSpider(scrapy.Spider):
             if urlparse(href).scheme in ('http', 'https'):
                 href_clean = href.split('?')[0]
                 if href.startswith(tuple(VIDEO_URLS)):
+                    # If YouTube, convert to embed URL so we can parse its data directly
                     if ('youtu' in href) and ('embed' not in href):
                         href = "https://www.youtube.com/embed/" + get_id(href)
-
-                if 'shadowbox' or 'colorbox' or 'data-fancybox' or 'data-lightbox' in a_tag:
+                    # If the anchor link shows evidence of being a popup overlay
+                    if a_tag.css('.fancybox') or a_tag.css('[data-fancybox]') or a_tag.css('.colorbox') or a_tag.css('[data-lightbox]') or a_tag.css('.lbpModal') or a_tag.css('[data-toggle="modal"]') or a_tag.css('.vp-yt-type') or a_tag.css('.vp-vim-type'):
                         on_page = 'YES'
-                    video_note = 'Captions required.'
+                        video_note = 'Captions required, likely overlay.'
                     else:
                         on_page = 'UNKNOWN'
                         video_note = 'Captions encouraged on off-site links. Required if overlay.'
