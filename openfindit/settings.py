@@ -62,9 +62,9 @@ CONCURRENT_REQUESTS_PER_IP = 1
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 # https://github.com/cnu/scrapy-random-useragent
 DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
     'random_useragent.RandomUserAgentMiddleware': 400,
-    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600
 }
 USER_AGENTS = [
     ('Mozilla/5.0 (X11; Linux x86_64) '

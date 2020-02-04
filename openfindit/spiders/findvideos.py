@@ -52,32 +52,33 @@ class FindVideosSpider(scrapy.Spider):
                     callback = self._parse_video_contents,
                     meta={'metadata': response.meta, 'video_found_as': 'embed', 'on_page': 'YES', 'video_note': 'Captions required.'},
                     dont_filter=True,)
-        
+            
 
         for a_tag in response.xpath('//a[@href]'):
             # print(a_tag.select('@href').extract())
             href = response.urljoin(a_tag.attrib['href']).replace("http://", "https://")
-            href_clean = href.split('?')[0]
-            if href.startswith(tuple(VIDEO_URLS)):
-                if ('youtu' in href) and ('embed' not in href):
-                    href = "https://www.youtube.com/embed/" + get_id(href)
+            if urlparse(href).scheme in ('http', 'https'):
+                href_clean = href.split('?')[0]
+                if href.startswith(tuple(VIDEO_URLS)):
+                    if ('youtu' in href) and ('embed' not in href):
+                        href = "https://www.youtube.com/embed/" + get_id(href)
 
                 if 'shadowbox' or 'colorbox' or 'data-fancybox' or 'data-lightbox' in a_tag:
-                    on_page = 'YES'
+                        on_page = 'YES'
                     video_note = 'Captions required.'
-                else:
-                    on_page = 'UNKNOWN'
-                    video_note = 'Captions encouraged on off-site links. Required if overlay.'
+                    else:
+                        on_page = 'UNKNOWN'
+                        video_note = 'Captions encouraged on off-site links. Required if overlay.'
 
-                yield scrapy.Request(
-                    href,
-                    callback = self._parse_video_contents,
-                    meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
-                    dont_filter=True,)
-            elif href_clean.endswith(tuple(DOCUMENT_EXT)):
-                print('Skip links to documents')
-            else:
-                yield scrapy.Request(href, self.parse)
+                    yield scrapy.Request(
+                        href,
+                        callback = self._parse_video_contents,
+                        meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
+                        dont_filter=True,)
+                elif href_clean.endswith(tuple(DOCUMENT_EXT)):
+                    print('Skip links to documents')
+                else:
+                    yield scrapy.Request(href, self.parse)
 
                     
     def _parse_video_contents(self, response):
