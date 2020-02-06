@@ -8,6 +8,7 @@ import re
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
+import time
 from ..utils import get_id
 
 class FindVideosSpider(scrapy.Spider):
@@ -93,15 +94,17 @@ class FindVideosSpider(scrapy.Spider):
         if ('/videoseries' and '/playlist' and 'watch_videos' and 'list') not in video_url: # If not playlist take off the query string
             video_url = video_url.split('?')[0]
         try:
-            print('MY INFO: subprocess')
+            print('MY INFO: Checking for captions and durration...')
             # TODO: Clean this up to only ping once
             cc = ""
             duration = ""
-            cc = subprocess.Popen(['youtube-dl', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
-            if '429' in cc:
+            cc = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+            if ('429' in cc) or ('Unable to extract video data' in cc):
                 print("WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
-                raise CloseSpider("Returned 429 - Too many requests. You're about to get this IP banned. Closing spider.")
-            duration = subprocess.Popen(['youtube-dl', '--get-duration', '--sleep-interval=122', '--max-sleep-interval=133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
+                raise CloseSpider("Returned 429 or Unable to extract... - Likely, Too many requests. You're about to get this IP banned. Closing spider.")
+            else:
+                wait.sleep(2)
+                duration = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--get-duration', '--sleep-interval=122', '--max-sleep-interval=133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
             if "Available subtitles for" in cc:
                 video_cc = "YES"
             elif ("has no subtitles" in cc) or ("video doesn't have subtitles" in cc):
