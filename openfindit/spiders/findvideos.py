@@ -98,7 +98,7 @@ class FindVideosSpider(scrapy.Spider):
             # TODO: Clean this up to only ping once
             cc = ""
             duration = ""
-            cc = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
+            # cc = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
             # if ('429' in cc) or ('Unable to extract video data' in cc):
             #     print("WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
             #     raise CloseSpider("Returned 429 or Unable to extract... - Likely, Too many requests. You're about to get this IP banned. Closing spider.")
