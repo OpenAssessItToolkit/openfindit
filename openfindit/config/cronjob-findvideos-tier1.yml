@@ -1,0 +1,32 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cronjob-findvideos
+spec:
+  schedule: "0 */3 * * *"  
+  concurrencyPolicy: "Forbid" 
+  startingDeadlineSeconds: 200          
+  successfulJobsHistoryLimit: 2 
+  failedJobsHistoryLimit: 2     
+  jobTemplate:             
+    spec:
+      template:
+        metadata:
+          labels:          
+            parent: "cronjobfindvideos"
+        spec:
+          containers:
+          - name: findvideos
+            image: docker-registry.default.svc:5000/accessibility-scanner/openfindit:latest
+            imagePullPolicy: Always
+            command: ["scrapy", "crawl", "findvideos", "-a", "filename=", $(TIER1_TARGETS), "-s", "DEPTH_LIMIT=25", "-s", "CLOSESPIDER_PAGECOUNT=300", "-t", "csv", "-o", "tmp/testsite-tier1-vids.csv"]
+            volumeMounts:
+              - mountPath: /opt/app-root/src/tmp
+                name: findvids-volume
+                readOnly: false
+                subPath: tmp
+          restartPolicy: Never 
+          volumes:
+            - name: findvids-volume
+              persistentVolumeClaim:
+                claimName: findvideos-output
