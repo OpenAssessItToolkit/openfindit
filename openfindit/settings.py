@@ -9,7 +9,7 @@
 #     https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 #     https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-BOT_NAME = 'scraper'
+BOT_NAME = 'Duke Accessibility Scraper for PDF and Video links'
 
 SPIDER_MODULES = ['openfindit.spiders']
 NEWSPIDER_MODULE = 'openfindit.spiders'
@@ -62,8 +62,9 @@ CONCURRENT_REQUESTS_PER_IP = 1
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 # https://github.com/cnu/scrapy-random-useragent
 DOWNLOADER_MIDDLEWARES = {
+    'scrapy.downloadermiddlewares.redirect.RedirectMiddleware': 600,
     'scrapy.contrib.downloadermiddleware.useragent.UserAgentMiddleware': None,
-    'random_useragent.RandomUserAgentMiddleware': 400
+    'random_useragent.RandomUserAgentMiddleware': 400,
 }
 USER_AGENTS = [
     ('Mozilla/5.0 (X11; Linux x86_64) '
@@ -113,8 +114,13 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-#HTTPCACHE_ENABLED = True
-#HTTPCACHE_EXPIRATION_SECS = 0
-#HTTPCACHE_DIR = 'httpcache'
-#HTTPCACHE_IGNORE_HTTP_CODES = []
-#HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+HTTPCACHE_ENABLED = True
+HTTPCACHE_EXPIRATION_SECS = 43200
+HTTPCACHE_DIR = 'httpcache'
+HTTPCACHE_IGNORE_HTTP_CODES = []
+HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+# Trying to get 301 to work
+# https://docs.scrapy.org/en/latest/topics/downloader-middleware.html#module-scrapy.downloadermiddlewares.redirect
+REDIRECT_ENABLED = True
+REDIRECT_MAX_TIMES = 5

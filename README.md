@@ -1,8 +1,8 @@
 # OpenFindIt (Work in Progress)
 
-The FindFiles Spider is a little [Scrapy](https://github.com/scrapy/scrapy) script to find documents on a website and send them to a CSV. Use case could be monitoring when new PDF files are uploaded to your website to check for accessibility compliance.
+The FindFiles Spider is a little [Scrapy](https://github.com/scrapy/scrapy) script to find documents or videos on a website and send them to a CSV. Use case could be monitoring when new PDF files are uploaded to your website to check for accessibility compliance.
 
-The FindVideos Spider searches for YouTube embeds and sends them to a CSV also. Use case could be monitoring when new YouTube videos are embedded on your website so you can manually check if accurate captions exist.
+The FindVideos Spider searches for YouTube embeds and sends them to a CSV also. It uses the [youtube-dl](https://github.com/ytdl-org/youtube-dl) library which support parsing metadata in dozens of video formats. Use case could be monitoring when new YouTube videos are embedded on your website so you can manually check if accurate captions exist.
 
 Scrapy is infinitely configurable. This specific crawler implementation features:
 
@@ -43,25 +43,29 @@ Change directories into the OpenFindIt folder
 cd openfindit
 ```
 
-
-## To search one domain:
-
-```bash
-scrapy crawl findfiles -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-pdf-links.html -s DEPTH_LIMIT=1 -o wiki-single-sites2.csv
-```
-
-## To search multiple domains:
+## To search multiple domains for documents:
 
 ```bash
 scrapy crawl findfiles -a filename=list-of-websites.txt  -s DEPTH_LIMIT=1 -t csv -o - > 'docs/assets/alice_today.csv'
 ```
 
+## To search one domain for documents:
+
+```bash
+scrapy crawl findfiles -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-pdf-links.html -s DEPTH_LIMIT=1 -o wiki-single-sites2.csv
+```
+
+## To search one domain for videos (NOTE: DEPTH_LIMIT must be 2 or greater to crawl video metadata):
+
+```bash
+scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=500 -t csv -o - > 'docs/assets/find_videos.csv'
+```
+
 
 `-a` is for passing in OpenFindIt arguments for which website(s) to scan.
 
-`-s` is for passing some native built-in [Scapy settings](https://docs.scrapy.org/en/latest/topics/settings.html), like [DEPTH_LIMIT](https://docs.scrapy.org/en/latest/topics/settings.html#depth-limit).
+`-s` is for passing any native built-in [Scapy settings](https://docs.scrapy.org/en/latest/topics/settings.html), like [DEPTH_LIMIT](https://docs.scrapy.org/en/latest/topics/settings.html#depth-limit) or [CLOSESPIDER_PAGECOUNT](https://docs.scrapy.org/en/latest/topics/settings.html#closespider_pagecount).
 
 `-t` is for file type.
 
-`-o - >` is for the name of your output file and directs it to overwrite the current file, rather than append.
-
+`-o` is for the name of your output file.
