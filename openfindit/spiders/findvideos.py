@@ -94,16 +94,20 @@ class FindVideosSpider(scrapy.Spider):
         if ('/videoseries' and '/playlist' and 'watch_videos' and 'list') not in video_url: # If not playlist take off the query string
             video_url = video_url.split('?')[0]
         try:
-            print('MY INFO: Checking for captions and durration...')
             # TODO: Clean this up to only ping once
             cc = ""
             duration = ""
+            if response.flags == ['cached']:
+                print('OpenFindIt: Cached response. Checking for captions and duration now...')
+            else:
+                print('OpenFindIt: Un-cached response. Checking for captions and duration (with ~1.5 minute random delay to avoid 429)...')
+                time.sleep(randint(61,121)) # if uncached, wait about 1 to 3 minutes between pings
             cc = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
             if ('429' in cc) or ('Unable to extract video data' in cc):
-                print("WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
-                raise CloseSpider("Returned 429 or Unable to extract... - Likely, Too many requests. You're about to get this IP banned. Closing spider.")
+                print("OpenFindIt: WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
+                raise CloseSpider("OpenFindIt: Returned 429 or Unable to extract... - Likely, Too many requests. You're about to get this IP banned. Closing spider.")
             else:
-                wait.sleep(2)
+                time.sleep(2)
                 duration = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--get-duration', '--sleep-interval=122', '--max-sleep-interval=133', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8").rstrip()
             if "Available subtitles for" in cc:
                 video_cc = "YES"
