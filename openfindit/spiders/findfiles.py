@@ -6,7 +6,7 @@ from scrapy.utils.httpobj import urlparse
 
 class FindFilesSpider(scrapy.Spider):
     name = 'findfiles'
-
+    
     def __init__(self, *args, **kwargs):
         """ Enable urls argument to for start_urls and parse for allowed_domains """
         urls = kwargs.pop('urls', [])
@@ -30,6 +30,7 @@ class FindFilesSpider(scrapy.Spider):
         for a_tag in response.xpath('//a[@href]'):
 
             url = response.urljoin(a_tag.attrib['href'])
+#             print(url)
 
             if urlparse(url).scheme in ('http', 'https'):
 
@@ -42,3 +43,7 @@ class FindFilesSpider(scrapy.Spider):
 
                 elif 'http' in urlparse(url).scheme:
                     yield scrapy.Request(url, self.parse)
+        
+    def closed(self, reason):
+        print('Scraping complete.,.,.')
+
