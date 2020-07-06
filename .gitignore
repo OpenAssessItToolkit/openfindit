@@ -8,3 +8,5 @@ env
 .vscode
 tmp
 .scrapy
+.ipynb_checkpoints/
+tmp/openfindit/tmp

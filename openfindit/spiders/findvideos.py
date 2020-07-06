@@ -10,6 +10,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
 import time
 from ..utils import get_id
+from time import sleep
 
 class FindVideosSpider(scrapy.Spider):
     name = 'findvideos'
@@ -40,7 +41,7 @@ class FindVideosSpider(scrapy.Spider):
     VIDEO_URLS = open(os.path.join(SCRIPT_PATH, '..', 'config', 'findvideos.txt')).read().splitlines()
     DOCUMENT_EXT = open(os.path.join(SCRIPT_PATH, '..', 'config', 'findfiles.txt')).read().splitlines()
     
-
+    
     def parse(self, response):
         """ Parse all <a>. yield PDF to csv, if not, crawl it  """
 
@@ -78,7 +79,8 @@ class FindVideosSpider(scrapy.Spider):
                         meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
                         dont_filter=True,)
                 elif href_clean.endswith(tuple(DOCUMENT_EXT)):
-                    print('Skip links to documents')
+                    # print('Skip links to documents')
+                    sleep(0.1)
                 else:
                     yield scrapy.Request(href, self.parse)
 
@@ -98,13 +100,14 @@ class FindVideosSpider(scrapy.Spider):
             cc = ""
             duration = ""
             if response.flags == ['cached']:
-                print('OpenFindIt: Cached response. Checking for captions and duration now...')
+                # print('OpenFindIt: Cached response. Checking for captions and duration now...')
+                sleep(0.1)
             else:
-                print('OpenFindIt: Un-cached response. Checking for captions and duration (with ~1.5 minute random delay to avoid 429)...')
+                # print('OpenFindIt: Un-cached response. Checking for captions and duration (with ~1.5 minute random delay to avoid 429)...')
                 time.sleep(randint(61,121)) # if uncached, wait about 1 to 3 minutes between pings
             cc = subprocess.Popen(['youtube-dl', '--no-playlist', '--retries=1', '--list-subs', '--sleep-interval=121', '--max-sleep-interval=131', video_url], stdout=subprocess.PIPE).communicate()[0].decode("utf-8")
             if ('429' in cc) or ('Unable to extract video data' in cc):
-                print("OpenFindIt: WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
+                # print("OpenFindIt: WARNING! WARNING! WARNING! WARNING! WARNING! WARNING!")
                 raise CloseSpider("OpenFindIt: Returned 429 or Unable to extract... - Likely, Too many requests. You're about to get this IP banned. Closing spider.")
             else:
                 time.sleep(2)
