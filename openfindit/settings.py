@@ -114,7 +114,7 @@ AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
 
 # Enable and configure HTTP caching (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html#httpcache-middleware-settings
-HTTPCACHE_ENABLED = True
+HTTPCACHE_ENABLED = False # Turned off to avoid Box Sync problems
 HTTPCACHE_EXPIRATION_SECS = 43200
 HTTPCACHE_DIR = 'httpcache'
 HTTPCACHE_IGNORE_HTTP_CODES = []
