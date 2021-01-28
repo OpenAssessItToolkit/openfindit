@@ -10,3 +10,4 @@ tmp
 .scrapy
 .ipynb_checkpoints/
 tmp/openfindit/tmp
+results
