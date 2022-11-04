@@ -3,4 +3,4 @@ scrapy==1.6.0
 scrapy-random-useragent==0.2
 youtube-dl==2021.12.17
 configargparse==1.5.3
-twisted==21.7.0
+twisted==22.10.0
