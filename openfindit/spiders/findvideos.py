@@ -7,7 +7,7 @@ import scrapy
 import re
 from scrapy.spiders import CrawlSpider
 from time import sleep
-from ..utils import get_id
+from ..utils import get_id, normalize_youtube_url
 
 
 class FindVideosSpider(scrapy.Spider):
@@ -46,12 +46,14 @@ class FindVideosSpider(scrapy.Spider):
             src = response.urljoin(iframe_tag.attrib['src']).replace("http://", "https://")
 
             # Handle oEmbed iframe that wraps YouTube
-            if "/oembed?url=" in src:
+            if "/oembed?url=" in src or "youtu" in src:
                 qs = parse_qs(urlparse(src).query)
                 actual_url = unquote(qs.get("url", [""])[0])
                 if actual_url.startswith(tuple(self.VIDEO_URLS)):
                     src = actual_url  # Use the actual YouTube link
 
+            src = normalize_youtube_url(src)
+            
             if src.startswith(tuple(self.VIDEO_URLS)):
                 yield scrapy.Request(
                     src,
@@ -68,8 +70,10 @@ class FindVideosSpider(scrapy.Spider):
             if urlparse(href).scheme in ('http', 'https'):
                 if href.startswith(tuple(self.VIDEO_URLS)):
                     # Normalize YouTube links
-                    if 'youtu' in href and 'embed' not in href:
-                        href = "https://www.youtube.com/watch?v=" + get_id(href)
+                    href = normalize_youtube_url(href)
+
+                    # if 'youtu' in href and 'embed' not in href:
+                    #     href = "https://www.youtube.com/watch?v=" + get_id(href)
 
                     on_page = 'YES' if any(a_tag.css(selector) for selector in [
                         '.fancybox', '[data-fancybox]', '.colorbox', '[data-lightbox]', '.lbpModal', '[data-toggle="modal"]', '.vp-yt-type', '.vp-vim-type'
@@ -83,7 +87,7 @@ class FindVideosSpider(scrapy.Spider):
                         meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
                         dont_filter=True,
                     )
-                elif href_clean.endswith(tuple(self.DOCUMENT_EXT)):
+                elif href.endswith(tuple(self.DOCUMENT_EXT)):
                     sleep(0.1)
                 else:
                     yield scrapy.Request(href, self.parse)
@@ -107,13 +111,8 @@ class FindVideosSpider(scrapy.Spider):
             return "UNKNOWN"
 
         def get_duration(url):
-            def normalize_url(u):
-                if 'youtube.com/embed/' in u:
-                    video_id = u.split('/')[-1]
-                    return f'https://www.youtube.com/watch?v={video_id}'
-                return u
+            url = normalize_youtube_url(url)
 
-            url = normalize_url(url)
             result = subprocess.run(
                 ['yt-dlp', '--no-playlist', '--get-duration', url],
                 stdout=subprocess.PIPE,
@@ -139,7 +138,7 @@ class FindVideosSpider(scrapy.Spider):
                 return "NO", output
             return "UNKNOWN", output
 
-        video_url = response.url
+        video_url = normalize_youtube_url(response.url)
 
         # Only strip query string for non-YouTube URLs
         parsed = urlparse(video_url)
