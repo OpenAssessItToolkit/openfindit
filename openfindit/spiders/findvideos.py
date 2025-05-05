@@ -64,9 +64,14 @@ class FindVideosSpider(scrapy.Spider):
 
         # Handle <a href>
         for a_tag in response.xpath('//a[@href]'):
-            href = response.urljoin(a_tag.attrib['href']).replace("http://", "https://")
-            href_clean = href.split('?')[0]
 
+            href = response.urljoin(a_tag.attrib['href']) # .replace("http://", "https://")
+            # href_clean = href.split('?')[0]
+
+            # ⛔️ Skip anchor and mailto links early
+            if href.startswith('#') or href.startswith('mailto:'):
+                continue
+            
             if urlparse(href).scheme in ('http', 'https'):
                 if href.startswith(tuple(self.VIDEO_URLS)):
                     # Normalize YouTube links
@@ -89,7 +94,7 @@ class FindVideosSpider(scrapy.Spider):
                     )
                 elif href.endswith(tuple(self.DOCUMENT_EXT)):
                     sleep(0.1)
-                else:
+                elif urlparse(href).netloc in self.allowed_domains:
                     yield scrapy.Request(href, self.parse)
 
     def _parse_video_contents(self, response):
