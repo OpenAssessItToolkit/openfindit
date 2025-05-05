@@ -8,6 +8,8 @@ import re
 from scrapy.spiders import CrawlSpider
 from time import sleep
 from ..utils import get_id, normalize_youtube_url
+import json
+
 
 
 class FindVideosSpider(scrapy.Spider):
@@ -142,6 +144,21 @@ class FindVideosSpider(scrapy.Spider):
             elif ("has no subtitles" in output) or ("video doesn't have subtitles" in output):
                 return "NO", output
             return "UNKNOWN", output
+        
+        def get_view_count(url):
+            result = subprocess.run(
+                ['yt-dlp', '--no-playlist', '-j', url],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            if result.returncode == 0:
+                try:
+                    data = json.loads(result.stdout)
+                    return data.get('view_count', 'UNKNOWN')
+                except json.JSONDecodeError:
+                    return 'UNKNOWN'
+            return 'UNKNOWN'
 
         video_url = normalize_youtube_url(response.url)
 
@@ -171,13 +188,17 @@ class FindVideosSpider(scrapy.Spider):
             video_cc, cc_output = check_captions(video_url)
             if '429' in cc_output or 'Unable to extract video data' in cc_output:
                 raise scrapy.exceptions.CloseSpider("Returned 429 or Unable to extract video data")
+
             video_duration = get_duration(video_url)
             if ':' not in video_duration:
                 video_duration = "UNKNOWN"
+
+            video_views = get_view_count(video_url)
         except Exception as ex:
             self.logger.warning(f"Error processing video: {ex}")
             video_cc = "UNKNOWN"
             video_duration = "UNKNOWN"
+            video_views = "UNKNOWN"
 
         yield dict(
             video_url=video_url,
@@ -185,6 +206,7 @@ class FindVideosSpider(scrapy.Spider):
             from_page_url=response.request.headers.get('Referer', b'').decode('utf-8', 'ignore'),
             captioned=video_cc,
             duration=video_duration,
+            view_count=video_views,
             location=response.meta['video_found_as'],
             on_page=response.meta['on_page'],
             notes=response.meta['video_note']
