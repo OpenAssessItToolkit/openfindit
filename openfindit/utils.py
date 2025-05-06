@@ -1,60 +1,67 @@
-from scrapy.utils.httpobj import urlparse
+import subprocess
+import json
 from urllib.parse import urlparse, parse_qs
-
-def get_youtube_id_from_oembed(oembed_url):
-    qs = parse_qs(urlparse(oembed_url).query)
-    encoded_url = qs.get("url", [""])[0]
-    actual_url = unquote(encoded_url)
-    return get_id(actual_url)
-
-def get_id(url):
-    """ parse YouTube urls for id """
-    u_pars = urlparse(url)
-    quer_v = parse_qs(u_pars.query).get('v')
-    if quer_v:
-        return quer_v[0]
-    pth = u_pars.path.split('/')
-    if pth:
-        return pth[-1]
 
 def normalize_youtube_url(url):
     """
-    Normalize any YouTube URL (embed, shortlink, oembed, etc.) to standard watch?v= format.
-    Returns the canonical URL or the original if it can't be parsed.
+    Normalize various YouTube URL formats into a standard watch URL.
     """
     parsed = urlparse(url)
-    netloc = parsed.netloc.lower()
-    path = parsed.path
-    query = parse_qs(parsed.query)
-
-    if 'youtu.be' in netloc:
-        # https://youtu.be/VIDEO_ID
-        video_id = path.lstrip('/')
-    elif 'youtube.com' in netloc:
-        if path.startswith('/watch'):
-            video_id = query.get('v', [None])[0]
-        elif path.startswith('/embed/'):
-            video_id = path.split('/embed/')[-1].split('/')[0]
-        elif path.startswith('/v/'):
-            video_id = path.split('/v/')[-1].split('/')[0]
-        elif path.contains('?'):
-            video_id = path.split('?')[0]
-        else:
-            video_id = None
-    else:
-        return url  # Not a YouTube domain
-
-    if video_id:
-        return f"https://www.youtube.com/watch?v={video_id}"
+    if 'youtu.be' in parsed.netloc:
+        video_id = parsed.path.lstrip('/')
+        return f'https://www.youtube.com/watch?v={video_id}'
+    elif 'youtube.com' in parsed.netloc:
+        qs = parse_qs(parsed.query)
+        video_id = qs.get('v')
+        if video_id:
+            return f'https://www.youtube.com/watch?v={video_id[0]}'
     return url
 
-def cc_status(cc):
-    """ parse for captions """
-    if "Available subtitles for" in cc:
-        yield "YES"
-    elif "has no subtitles" in cc:
-        yield "NO"
-    elif "video doesn't have subtitles" in cc:
-        yield "NO"
-    else:
-        yield "UNKNOWN"  
+def extract_video_metadata(video_url):
+    """
+    Use yt-dlp to extract video duration, caption status, and view count.
+    """
+    try:
+        result = subprocess.run(
+            ['yt-dlp', '--dump-single-json', '--no-playlist', video_url],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        if result.returncode != 0:
+            raise Exception(f"yt-dlp failed: {result.stderr}")
+
+        data = json.loads(result.stdout)
+
+        # Format duration into H:MM:SS
+        seconds = int(data.get('duration', 0))
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            duration = f"{hours}:{minutes:02}:{seconds:02}"
+        else:
+            duration = f"{minutes}:{seconds:02}"
+
+        view_count = str(data.get('view_count', 'UNKNOWN'))
+
+        subtitles = data.get('subtitles') or {}
+        auto_captions = data.get('automatic_captions') or {}
+        captioned = "YES" if subtitles or auto_captions else "NO"
+
+        return duration, captioned, view_count
+
+    except Exception as e:
+        print(f"Error in extract_video_metadata: {e}")
+        return "UNKNOWN", "UNKNOWN", "UNKNOWN"
+
+def get_id(url):
+    """
+    Extract the video ID from a normalized YouTube URL.
+    """
+    parsed = urlparse(url)
+    if 'youtube.com' in parsed.netloc:
+        qs = parse_qs(parsed.query)
+        return qs.get('v', [''])[0]
+    elif 'youtu.be' in parsed.netloc:
+        return parsed.path.lstrip('/')
+    return ''

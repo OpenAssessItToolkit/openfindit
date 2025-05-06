@@ -2,38 +2,31 @@
 import subprocess
 import os
 import sys
-from urllib.parse import urlparse, parse_qs, unquote, urljoin
-import scrapy
 import re
+from urllib.parse import urlparse, parse_qs, unquote
+import scrapy
 from scrapy.spiders import CrawlSpider
 from time import sleep
-from ..utils import get_id, normalize_youtube_url
-import json
-
-
+from ..utils import get_id, normalize_youtube_url, extract_video_metadata
 
 class FindVideosSpider(scrapy.Spider):
     name = 'findvideos'
 
     def __init__(self, *args, **kwargs):
-        """ Allow start_urls from CLI --urls or --filename """
         urls = kwargs.pop('urls', '')
         filename = kwargs.pop('filename', '')
 
         if urls:
             input_urls = urls.split(',')
             self.start_urls = [url.strip() for url in input_urls if url.strip()]
-            self.allowed_domains = [urlparse(url).netloc for url in self.start_urls]
-
         elif filename:
             with open(filename) as f:
                 lines = [line.strip() for line in f if line.strip()]
-                self.start_urls = lines
-                self.allowed_domains = [urlparse(url).netloc for url in lines]
-
+                self.start_urls = self._extract_urls_from_lines(lines)
         else:
             raise ValueError("You must provide either --urls or --filename")
 
+        self.allowed_domains = [urlparse(url).netloc for url in self.start_urls]
         self.logger.info(f"Start URLs: {self.start_urls}")
         super(FindVideosSpider, self).__init__(*args, **kwargs)
 
@@ -41,21 +34,33 @@ class FindVideosSpider(scrapy.Spider):
         self.VIDEO_URLS = open(os.path.join(script_path, '..', 'config', 'findvideos.txt')).read().splitlines()
         self.DOCUMENT_EXT = open(os.path.join(script_path, '..', 'config', 'findfiles.txt')).read().splitlines()
 
+        self.seen_video_urls = set()
+
+    def _extract_urls_from_lines(self, lines):
+        urls = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("<"):
+                match = re.search(r'<loc>(.*?)</loc>', line)
+                if match:
+                    urls.append(match.group(1).strip())
+            else:
+                urls.append(line)
+        return urls
+
     def parse(self, response):
-        """ Parse all <a> and <iframe> tags. """
-        # Handle iframe tags
         for iframe_tag in response.xpath('//iframe[@src]'):
             src = response.urljoin(iframe_tag.attrib['src']).replace("http://", "https://")
-
-            # Handle oEmbed iframe that wraps YouTube
             if "/oembed?url=" in src or "youtu" in src:
                 qs = parse_qs(urlparse(src).query)
                 actual_url = unquote(qs.get("url", [""])[0])
                 if actual_url.startswith(tuple(self.VIDEO_URLS)):
-                    src = actual_url  # Use the actual YouTube link
+                    src = actual_url
 
             src = normalize_youtube_url(src)
-            
+
             if src.startswith(tuple(self.VIDEO_URLS)):
                 yield scrapy.Request(
                     src,
@@ -64,24 +69,14 @@ class FindVideosSpider(scrapy.Spider):
                     dont_filter=True,
                 )
 
-        # Handle <a href>
         for a_tag in response.xpath('//a[@href]'):
-
-            href = response.urljoin(a_tag.attrib['href']) # .replace("http://", "https://")
-            # href_clean = href.split('?')[0]
-
-            # ⛔️ Skip anchor and mailto links early
+            href = response.urljoin(a_tag.attrib['href'])
             if href.startswith('#') or href.startswith('mailto:'):
                 continue
-            
+
             if urlparse(href).scheme in ('http', 'https'):
                 if href.startswith(tuple(self.VIDEO_URLS)):
-                    # Normalize YouTube links
                     href = normalize_youtube_url(href)
-
-                    # if 'youtu' in href and 'embed' not in href:
-                    #     href = "https://www.youtube.com/watch?v=" + get_id(href)
-
                     on_page = 'YES' if any(a_tag.css(selector) for selector in [
                         '.fancybox', '[data-fancybox]', '.colorbox', '[data-lightbox]', '.lbpModal', '[data-toggle="modal"]', '.vp-yt-type', '.vp-vim-type'
                     ]) else 'UNKNOWN'
@@ -98,78 +93,21 @@ class FindVideosSpider(scrapy.Spider):
                     sleep(0.1)
                 elif urlparse(href).netloc in self.allowed_domains:
                     yield scrapy.Request(href, self.parse)
+                else:
+                    yield scrapy.Request(href, self.parse)
 
     def _parse_video_contents(self, response):
-        """ Inspect video for title, captions, duration """
-        def format_duration(duration_str):
-            parts = duration_str.strip().split(':')
-            try:
-                if len(parts) == 1:
-                    seconds = int(parts[0])
-                    return f"{seconds // 60}:{seconds % 60:02d}"
-                elif len(parts) == 2:
-                    minutes, seconds = map(int, parts)
-                    return f"{minutes}:{seconds:02d}"
-                elif len(parts) == 3:
-                    hours, minutes, seconds = map(int, parts)
-                    return f"{hours}:{minutes:02d}:{seconds:02d}"
-            except ValueError:
-                pass
-            return "UNKNOWN"
-
-        def get_duration(url):
-            url = normalize_youtube_url(url)
-
-            result = subprocess.run(
-                ['yt-dlp', '--no-playlist', '--get-duration', url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            if result.returncode == 0:
-                duration_raw = result.stdout.strip()
-                return format_duration(duration_raw)
-            return "UNKNOWN"
-
-        def check_captions(url):
-            result = subprocess.run(
-                ['yt-dlp', '--no-playlist', '--list-subs', url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            output = result.stdout
-            if "Available subtitles for" in output:
-                return "YES", output
-            elif ("has no subtitles" in output) or ("video doesn't have subtitles" in output):
-                return "NO", output
-            return "UNKNOWN", output
-        
-        def get_view_count(url):
-            result = subprocess.run(
-                ['yt-dlp', '--no-playlist', '-j', url],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True
-            )
-            if result.returncode == 0:
-                try:
-                    data = json.loads(result.stdout)
-                    return data.get('view_count', 'UNKNOWN')
-                except json.JSONDecodeError:
-                    return 'UNKNOWN'
-            return 'UNKNOWN'
-
         video_url = normalize_youtube_url(response.url)
-
-        # Only strip query string for non-YouTube URLs
         parsed = urlparse(video_url)
         if "youtube" not in parsed.netloc and "youtu.be" not in parsed.netloc:
             video_url = parsed.scheme + "://" + parsed.netloc + parsed.path
 
+        if video_url in self.seen_video_urls:
+            return
+        self.seen_video_urls.add(video_url)
+
         video_title = response.xpath('//title/text()').get(default='').strip()
         if video_title.lower() == 'youtube' or not video_title:
-            # Try yt-dlp for a better title
             try:
                 result = subprocess.run(
                     ['yt-dlp', '--no-playlist', '--get-title', video_url],
@@ -185,28 +123,18 @@ class FindVideosSpider(scrapy.Spider):
         video_title_clean = re.sub(r'\W+', ' ', video_title).strip()
 
         try:
-            video_cc, cc_output = check_captions(video_url)
-            if '429' in cc_output or 'Unable to extract video data' in cc_output:
-                raise scrapy.exceptions.CloseSpider("Returned 429 or Unable to extract video data")
-
-            video_duration = get_duration(video_url)
-            if ':' not in video_duration:
-                video_duration = "UNKNOWN"
-
-            video_views = get_view_count(video_url)
+            duration, captioned, views = extract_video_metadata(video_url)
         except Exception as ex:
             self.logger.warning(f"Error processing video: {ex}")
-            video_cc = "UNKNOWN"
-            video_duration = "UNKNOWN"
-            video_views = "UNKNOWN"
+            duration = captioned = views = "UNKNOWN"
 
         yield dict(
             video_url=video_url,
             video_title=video_title_clean,
             from_page_url=response.request.headers.get('Referer', b'').decode('utf-8', 'ignore'),
-            captioned=video_cc,
-            duration=video_duration,
-            view_count=video_views,
+            captioned=captioned,
+            duration=duration,
+            view_count=views,
             location=response.meta['video_found_as'],
             on_page=response.meta['on_page'],
             notes=response.meta['video_note']
