@@ -31,12 +31,6 @@ __Prerequisites:__
 
 1. [Start up a virtual environment](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
-https://help.dreamhost.com/hc/en-us/articles/115000695551-Installing-and-using-virtualenv-with-Python-3
-
-set default to python3
-
-https://dev.to/malwarebo/how-to-set-python3-as-a-default-python-version-on-mac-4jjf
-
 2. Install requirements:
 
 ```bash
@@ -63,11 +57,11 @@ scrapy crawl findfiles -a urls=http://joelcrawfordsmith.com/openassessit/demo/te
 
 ## To search one domain for videos (NOTE: DEPTH_LIMIT must be 2 or greater to crawl video metadata):
 
-```bash
-scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=500 -t csv -o - > 'results/find_videos.csv'
-```
+You can use a text file with domains on a different line, or provide a sitemap
 
-(Output folder must exist)
+```bash
+scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=500 -t csv -o - > 'docs/assets/find_videos.csv'
+```
 
 
 `-a` is for passing in OpenFindIt arguments for which website(s) to scan.
@@ -77,7 +71,3 @@ scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/t
 `-t` is for file type.
 
 `-o` is for the name of your output file.
-
-## youtube-dl direct command line
-
-youtube-dl --print-json --no-playlist --print-json --skip-download --retries=1 --sleep-interval=1 https://www.youtube.com/embed/J76m1ClLIw4
