@@ -4,26 +4,43 @@ from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
 from collections.abc import Mapping
+import re
 
 class FindFilesSpider(scrapy.Spider):
     name = 'findfiles'
     
     def __init__(self, *args, **kwargs):
         """ Enable urls argument to for start_urls and parse for allowed_domains """
-        urls = kwargs.pop('urls', [])
-        if urls:
-            input = kwargs.get('urls', '').split(',') or []
-            self.start_urls = [urls for d in input]
-            self.allowed_domains = [urlparse(urls).netloc for d in input]
+        urls = kwargs.pop('urls', '')
+        filename = kwargs.pop('filename', '')
 
-        filename = kwargs.pop('filename', [])
-        if filename:
+        if urls:
+            input_urls = urls.split(',')
+            self.start_urls = [url.strip() for url in input_urls if url.strip()]
+        elif filename:
             with open(filename) as f:
-                self.start_urls = [url.strip() for url in f.readlines()]
-                self.allowed_domains = [urlparse(url).netloc for url in f.readlines()]
+                lines = [line.strip() for line in f if line.strip()]
+                self.start_urls = self._extract_urls_from_lines(lines)
+        else:
+            raise ValueError("You must provide either --urls or --filename")
 
         self.logger.info(self.start_urls)
         super(FindFilesSpider, self).__init__(*args, **kwargs)
+
+
+    def _extract_urls_from_lines(self, lines):
+        urls = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("<"):
+                match = re.search(r'<loc>(.*?)</loc>', line)
+                if match:
+                    urls.append(match.group(1).strip())
+            else:
+                urls.append(line)
+        return urls
 
 
     def parse(self, response):
