@@ -32,7 +32,6 @@ class FindVideosSpider(scrapy.Spider):
 
         script_path = os.path.dirname(os.path.realpath(__file__))
         self.VIDEO_URLS = open(os.path.join(script_path, '..', 'config', 'findvideos.txt')).read().splitlines()
-        self.DOCUMENT_EXT = open(os.path.join(script_path, '..', 'config', 'findfiles.txt')).read().splitlines()
 
         self.seen_video_urls = set()
 
@@ -89,8 +88,6 @@ class FindVideosSpider(scrapy.Spider):
                         meta={'metadata': response.meta, 'video_found_as': 'link', 'on_page': on_page, 'video_note': video_note},
                         dont_filter=True,
                     )
-                elif href.endswith(tuple(self.DOCUMENT_EXT)):
-                    sleep(0.1)
                 elif urlparse(href).netloc in self.allowed_domains:
                     yield scrapy.Request(href, self.parse)
                 else:
