@@ -3,6 +3,7 @@ import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 from scrapy.utils.httpobj import urlparse
+from collections.abc import Mapping
 
 class FindFilesSpider(scrapy.Spider):
     name = 'findfiles'
