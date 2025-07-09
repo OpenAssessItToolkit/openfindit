@@ -1,1 +1,2 @@
 http://joelcrawfordsmith.com/openassessit/demo/test-index.html
+https://commencement.duke.edu

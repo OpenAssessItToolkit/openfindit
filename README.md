@@ -57,12 +57,31 @@ scrapy crawl findfiles -a urls=http://joelcrawfordsmith.com/openassessit/demo/te
 
 ## To search one domain for videos (NOTE: DEPTH_LIMIT must be 2 or greater to crawl video metadata):
 
-You can use a text file with domains on a different line, or provide a sitemap
+You can use a url, a text file with a list of urls, or provide a sitemap.
+
+For just crawling pages starting at a specific URL on non-ajaxy non-SPA websites use the following. Set the DEPTH_LIMIT to as deep as you want.
 
 ```bash
-scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=500 -t csv -o - > 'docs/assets/find_videos.csv'
+scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=50000 -t csv -o - > 'docs/assets/find_videos.csv'
 ```
 
+For just crawling a a single url or comma separted list of urls to use as starting pages in a on non-ajaxy non-SPA websites use the following. Set the DEPTH_LIMIT to as deep as you want.
+
+```bash
+scrapy crawl findvideos -a urls=http://joelcrawfordsmith.com/openassessit/demo/test-index.html  -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=50000 -t csv -o - > 'docs/assets/find_videos.csv'
+```
+
+For just crawling a list or urls in a text file as starting pages in a on non-ajaxy non-SPA websites use the following. Set the DEPTH_LIMIT to as deep as you want.
+
+```bash
+scrapy crawl findvideos -a filename=list-of-websites.txt -s DEPTH_LIMIT=5 -s CLOSESPIDER_PAGECOUNT=50000 -t csv -o - > 'docs/assets/find_videos.csv'
+```
+
+For ajaxy SPA websites, you must use a sitemap so it can find every page. Use DEPTH_LIMIT of 0, because all of the URLs are listed in the sitemap, therefore it does not need to crawl the webpage find the next webpage.
+
+```bash
+scrapy crawl findvideos -a sitemap_url="https://foo.edu/sitemap/sitemap-0.xml" -s DEPTH_LIMIT=0 -s CLOSESPIDER_PAGECOUNT=500000 -t csv -O results/oie_videos_2025.csv
+```
 
 `-a` is for passing in OpenFindIt arguments for which website(s) to scan.
 
